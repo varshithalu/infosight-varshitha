@@ -24,7 +24,7 @@ async def get_chat_history(current_user: UserInDB = Depends(get_current_user)):
     
     # Filter out the system prompt and the initial "Got it" message
     filtered_history = [
-        msg for msg in history_from_db if not msg['parts'][0].startswith("You are Rohan")
+        msg for msg in history_from_db if not msg['parts'][0].startswith("You are Ishaan")
     ][1:]
     
     # Transform the data to match the ChatHistoryMessage model (parts -> content)
