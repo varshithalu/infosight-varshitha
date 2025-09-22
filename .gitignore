@@ -1,0 +1,11 @@
+# Ignore Python virtual environments
+venv/
+env/
+
+# Optional common Python ignores
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+.env
