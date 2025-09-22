@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
+// Import the "three dots" icon and the "send" icon
+import { FiSend, FiMoreVertical } from "react-icons/fi";
 
 const ChatPage = () => {
   const { logout } = useAuth();
@@ -9,10 +11,30 @@ const ChatPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
+  // --- State and Ref for the dropdown menu ---
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  // --- Effect to close the menu when clicking outside ---
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsMenuOpen(false);
+      }
+    };
+    if (isMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isMenuOpen]);
+
+  // Effect to fetch initial chat history
   useEffect(() => {
     const fetchHistory = async () => {
       try {
@@ -25,6 +47,7 @@ const ChatPage = () => {
     fetchHistory();
   }, []);
 
+  // Effect to scroll to the bottom of the chat on new messages
   useEffect(scrollToBottom, [messages]);
 
   const handleSendMessage = async (e) => {
@@ -53,6 +76,8 @@ const ChatPage = () => {
   };
 
   const handleClearChat = async () => {
+    // We can close the menu before showing the confirm dialog
+    setIsMenuOpen(false);
     if (window.confirm("Are you sure you want to clear the chat history?")) {
       try {
         await api.delete("/chat/history");
@@ -67,33 +92,59 @@ const ChatPage = () => {
   return (
     <div className="chat-container">
       <header className="chat-header">
-        <h1>Chat with Ishaan 😉</h1>
-        <div>
+        <div className="bot-info">
+          <div className="status-indicator"></div>
+          <h1>Chat with Ishaan!</h1>
+        </div>
+
+        <div className="header-menu-container" ref={menuRef}>
           <button
-            onClick={handleClearChat}
-            className="header-button clear-button"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="icon-button"
+            title="Options"
           >
-            Clear Chat
+            <FiMoreVertical />
           </button>
-          <button onClick={logout} className="header-button logout-button">
-            Logout
-          </button>
+
+          {isMenuOpen && (
+            <div className="dropdown-menu">
+              <button onClick={handleClearChat} className="dropdown-item">
+                Clear Chat
+              </button>
+              <button onClick={logout} className="dropdown-item logout-option">
+                Logout
+              </button>
+            </div>
+          )}
         </div>
       </header>
+
       <div className="message-list">
         {messages.map((msg, index) => (
           <div key={index} className={`message ${msg.role}`}>
-            <div className="message-bubble">
-              <p>{msg.content}</p>
+            {msg.role === "model" && <div className="avatar">R</div>}
+            <div className="message-content">
+              <div className="message-bubble">
+                <p>{msg.content}</p>
+              </div>
+              <span className="timestamp">
+                {new Date().toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
             </div>
           </div>
         ))}
         {isLoading && (
           <div className="message model">
-            <div className="message-bubble typing-indicator">
-              <span></span>
-              <span></span>
-              <span></span>
+            <div className="avatar">R</div>
+            <div className="message-content">
+              <div className="message-bubble typing-indicator">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
             </div>
           </div>
         )}
@@ -107,8 +158,13 @@ const ChatPage = () => {
           placeholder="Type your message..."
           disabled={isLoading}
         />
-        <button type="submit" disabled={isLoading}>
-          Send
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="send-button"
+          title="Send Message"
+        >
+          <FiSend />
         </button>
       </form>
     </div>
